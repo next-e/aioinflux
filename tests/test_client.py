@@ -139,7 +139,7 @@ async def test_empty_chunked_query(client):
     async for chunk in resp:
         for point in iterpoints(chunk):
             points.append(point)
-    assert len(points) == 0
+    assert not points
 
 
 ####################

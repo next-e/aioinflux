@@ -318,11 +318,9 @@ class InfluxDBClient:
                 # Hack to avoid aiohttp raising ValueError('Line is too long')
                 # The number 128 is arbitrary (may be too large/small).
                 resp.content._high_water *= 128
-                chunk_count = 0
-                async for chunk in resp.content:
+                async for chunk_count, chunk in enumerate(resp.content, start=1):
                     chunk = json.loads(chunk)
                     self._check_error(chunk)
-                    chunk_count += 1
                     logger.debug(f'Yielding chunk #{chunk_count:03d}')
                     if dataframe:
                         yield serialization.dataframe.parse(chunk)

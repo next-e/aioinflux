@@ -35,9 +35,10 @@ def _get_name(series):
 
 
 def _drop_zero_index(df):
-    if isinstance(df.index, pd.DatetimeIndex):
-        if all(i.value == 0 for i in df.index):
-            return df.reset_index(drop=True)
+    if isinstance(df.index, pd.DatetimeIndex) and all(
+        i.value == 0 for i in df.index
+    ):
+        return df.reset_index(drop=True)
     return df
 
 
@@ -45,9 +46,11 @@ def parse(resp) -> DataFrameType:
     """Makes a dictionary of DataFrames from a response object"""
     statements = []
     for statement in resp['results']:
-        series = {}
-        for s in statement.get('series', []):
-            series[_get_name(s)] = _drop_zero_index(_serializer(s))
+        series = {
+            _get_name(s): _drop_zero_index(_serializer(s))
+            for s in statement.get('series', [])
+        }
+
         statements.append(series)
 
     if len(statements) == 1:
@@ -75,12 +78,11 @@ def _replace(df):
     other_cols = set(df.columns) - obj_cols
     obj_nans = (f'{k}="nan"' for k in obj_cols)
     other_nans = (f'{k}=nani?' for k in other_cols)
-    replacements = [
+    return [
         ('|'.join(chain(obj_nans, other_nans)), ''),
         (',{2,}', ','),
         ('|'.join([', ,', ', ', ' ,']), ' '),
     ]
-    return replacements
 
 
 def serialize(df, measurement, tag_columns=None, **extra_tags) -> bytes:
@@ -93,11 +95,9 @@ def serialize(df, measurement, tag_columns=None, **extra_tags) -> bytes:
     tag_columns = set(tag_columns or [])
     isnull = df.isnull().any(axis=1)
 
-    # Make parser function
-    tags = []
     fields = []
-    for k, v in extra_tags.items():
-        tags.append(f"{k}={escape(v, key_escape)}")
+    # Make parser function
+    tags = [f"{k}={escape(v, key_escape)}" for k, v in extra_tags.items()]
     for i, (k, v) in enumerate(df.dtypes.items()):
         k = k.translate(key_escape)
         if k in tag_columns:
@@ -116,12 +116,10 @@ def serialize(df, measurement, tag_columns=None, **extra_tags) -> bytes:
            ' ', ','.join(fields), ' {p[0].value}')
     f = eval("lambda p: f'{}'".format(''.join(fmt)))
 
-    # Map/concat
-    if isnull.any():
-        lp = map(f, _itertuples(df[~isnull]))
-        rep = _replace(df)
-        lp_nan = (reduce(lambda a, b: re.sub(*b, a), rep, f(p))
-                  for p in _itertuples(df[isnull]))
-        return '\n'.join(chain(lp, lp_nan)).encode('utf-8')
-    else:
+    if not isnull.any():
         return '\n'.join(map(f, _itertuples(df))).encode('utf-8')
+    lp = map(f, _itertuples(df[~isnull]))
+    rep = _replace(df)
+    lp_nan = (reduce(lambda a, b: re.sub(*b, a), rep, f(p))
+              for p in _itertuples(df[isnull]))
+    return '\n'.join(chain(lp, lp_nan)).encode('utf-8')
