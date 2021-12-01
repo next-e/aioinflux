@@ -38,7 +38,7 @@ def iterpoints(resp: dict, parser: Optional[Callable] = None) -> Generator:
             continue
         for series in statement['series']:
             if parser is None:
-                yield from (x for x in series['values'])
+                yield from iter(series['values'])
             elif 'meta' in inspect.signature(parser).parameters:
                 meta = {k: series[k] for k in series if k != 'values'}
                 meta['statement_id'] = statement['statement_id']

@@ -59,16 +59,18 @@ def _serialize_fields(point):
     output = []
     for k, v in point['fields'].items():
         k = escape(k, key_escape)
-        if isinstance(v, bool):
+        if (
+            isinstance(v, bool)
+            or not isinstance(v, int)
+            and not isinstance(v, str)
+            and v is not None
+        ):
             output.append(f'{k}={v}')
         elif isinstance(v, int):
             output.append(f'{k}={v}i')
         elif isinstance(v, str):
             output.append(f'{k}="{v.translate(str_escape)}"')
-        elif v is None:
+        else:
             # Empty values
             continue
-        else:
-            # Floats
-            output.append(f'{k}={v}')
     return ','.join(output)

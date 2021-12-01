@@ -84,7 +84,7 @@ def is_optional(t, base_type):
     return False
 
 
-def _make_serializer(meas, schema, extra_tags, placeholder):  # noqa: C901
+def _make_serializer(meas, schema, extra_tags, placeholder):    # noqa: C901
     """Factory of line protocol parsers"""
     _validate_schema(schema, placeholder)
     tags = []
@@ -102,10 +102,7 @@ def _make_serializer(meas, schema, extra_tags, placeholder):  # noqa: C901
             else:
                 ts = f"{{dt_to_int(str_to_dt(i.{k}))}}"
         elif t is TIMEDT:
-            if pd:
-                ts = f"{{pd.Timestamp(i.{k} or 0).value}}"
-            else:
-                ts = f"{{dt_to_int(i.{k})}}"
+            ts = f"{{pd.Timestamp(i.{k} or 0).value}}" if pd else f"{{dt_to_int(i.{k})}}"
         elif t is TAG or is_optional(t, TAG):
             tags.append(f"{k}={{str(i.{k}).translate(tag_escape)}}")
         elif t is TAGENUM or is_optional(t, TAGENUM):
@@ -182,7 +179,7 @@ def lineprotocol(
         def _parser_selector(i):
             if not hasattr(i, '_asdict'):
                 raise ValueError("'rm_none' can only be used with namedtuples")
-            key = tuple([k for k, v in i._asdict().items() if v != '' and v is not None])
+            key = tuple(k for k, v in i._asdict().items() if v != '' and v is not None)
             if key not in parsers:
                 _schema = schema or typing.get_type_hints(cls) or {}
                 _schema = {k: v for k, v in _schema.items() if k in key}

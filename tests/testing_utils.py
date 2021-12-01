@@ -15,7 +15,7 @@ logger = logging.getLogger('aioinflux')
 
 def random_point():
     now = datetime.datetime.now()
-    point = {
+    return {
         'measurement': 'test_measurement',  # noqa
         'tags': {'tag key with sp🚀ces': 'tag,value,with"commas"'},
         'time': random.choice([now, str(now)]),
@@ -25,11 +25,10 @@ def random_point():
             'value': random.random(),
         }
     }
-    return point
 
 
 def random_points(n=10):
-    for i in range(n):
+    for _ in range(n):
         yield random_point()
 
 
